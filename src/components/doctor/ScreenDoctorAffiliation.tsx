@@ -34,6 +34,7 @@ export const ScreenDoctorAffiliation: React.FC = () => {
     isOperatingIndependently,
     toggleIndependentPractice,
     setCurrentStep,
+    prefillSampleDoctor,
   } = useDoctor();
 
   // Search & Filter State
@@ -608,19 +609,29 @@ export const ScreenDoctorAffiliation: React.FC = () => {
           <span>Back to Profile</span>
         </button>
 
-        <div className="flex items-center space-x-3 w-full sm:w-auto">
+        <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto justify-end">
           <button
             type="button"
             onClick={handleSkip}
-            className="w-full sm:w-auto px-4 py-2 border border-slate-300 hover:bg-slate-50 rounded-lg text-xs font-medium text-slate-700 transition-colors"
+            className="px-3.5 py-2 border border-slate-300 hover:bg-slate-50 rounded-lg text-xs font-medium text-slate-700 transition-colors"
           >
             Skip / Continue Later
           </button>
 
           <button
             type="button"
+            onClick={prefillSampleDoctor}
+            className="inline-flex items-center space-x-1.5 px-4 py-2.5 rounded-lg border border-sky-400 bg-sky-50 hover:bg-sky-100 text-sky-800 font-semibold text-xs transition-colors shadow-2xs"
+            title="Populate form with verified sample physician credentials"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-sky-600" />
+            <span>Fill with Demo Data</span>
+          </button>
+
+          <button
+            type="button"
             onClick={handleContinue}
-            className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-medium text-sm rounded-lg shadow-xs transition-colors"
+            className="inline-flex items-center justify-center space-x-2 px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-medium text-sm rounded-lg shadow-xs transition-colors"
           >
             <span>Continue to Verification</span>
             <ArrowRight className="w-4 h-4" />

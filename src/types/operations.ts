@@ -26,14 +26,19 @@ export type OperationalTab =
 
 export type UserRole =
   | 'Clinic Owner'
+  | 'Executive Director / Clinic Director'
   | 'Clinic Administrator'
   | 'Medical Director'
   | 'Doctor'
   | 'Nurse'
   | 'Receptionist'
+  | 'Finance & Claims Officer'
   | 'Finance Officer'
   | 'Claims Officer'
-  | 'Records Officer';
+  | 'Records Officer'
+  | 'Pharmacy Coordinator'
+  | 'Diagnostic Coordinator'
+  | 'Auditor';
 
 export interface EmergencyContact {
   name: string;
@@ -395,7 +400,7 @@ export interface DoctorProfileRecord {
   subSpecialty?: string;
   experienceYears: number;
   affiliationStatus: 'Active' | 'Pending Review' | 'Suspended';
-  affiliationModel: 'Commission Split' | 'Room Rental' | 'Fixed Retainer' | 'Salaried';
+  affiliationModel: 'Commission Split' | 'Room Rental' | 'Fixed Retainer' | 'Salaried' | 'Sessional (70/30)' | 'Independent';
   contractRevenueSplit: number;
   assignedRoom: string;
   weeklyHours: string;
@@ -405,6 +410,13 @@ export interface DoctorProfileRecord {
   phone: string;
   email: string;
   credentialsVerified: boolean;
+  bio?: string;
+  reviewCount?: number;
+  clinicSplit?: number;
+  doctorSplit?: number;
+  platformSplit?: number;
+  assignedSuite?: string;
+  activePatientsCount?: number;
 }
 
 export type InsuranceClaimRecord = InsuranceClaim;

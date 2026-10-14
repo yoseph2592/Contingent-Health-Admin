@@ -33,6 +33,7 @@ export const ScreenDoctorReview: React.FC = () => {
     setCurrentStep,
     completeRegistration,
     contingentVerificationId,
+    prefillSampleDoctor,
   } = useDoctor();
 
   const [consentError, setConsentError] = useState('');
@@ -377,14 +378,26 @@ export const ScreenDoctorReview: React.FC = () => {
             <span>Back to Verification</span>
           </button>
 
-          <button
-            type="submit"
-            className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-lg shadow-sm hover:shadow transition-all"
-          >
-            <ShieldCheck className="w-5 h-5" />
-            <span>Complete Registration & Open Doctor Portal</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
+          <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto justify-end">
+            <button
+              type="button"
+              onClick={prefillSampleDoctor}
+              className="inline-flex items-center space-x-1.5 px-4 py-3 rounded-lg border border-sky-400 bg-sky-50 hover:bg-sky-100 text-sky-800 font-semibold text-xs transition-colors shadow-2xs"
+              title="Populate form with verified sample physician credentials"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-sky-600" />
+              <span>Fill with Demo Data</span>
+            </button>
+
+            <button
+              type="submit"
+              className="inline-flex items-center justify-center space-x-2 px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-lg shadow-sm hover:shadow transition-all"
+            >
+              <ShieldCheck className="w-5 h-5" />
+              <span>Complete Registration & Open Doctor Portal</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </form>
     </div>

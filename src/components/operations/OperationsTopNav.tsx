@@ -9,6 +9,7 @@ import {
   RotateCcw,
   Check,
   Menu,
+  UserPlus,
 } from 'lucide-react';
 
 export const OperationsTopNav: React.FC = () => {
@@ -30,16 +31,22 @@ export const OperationsTopNav: React.FC = () => {
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
-  const roles: UserRole[] = [
+  const coreRoles: UserRole[] = [
+    'Clinic Owner',
+    'Executive Director / Clinic Director',
     'Clinic Administrator',
     'Medical Director',
     'Doctor',
     'Nurse',
     'Receptionist',
-    'Finance Officer',
-    'Claims Officer',
-    'Clinic Owner',
+    'Finance & Claims Officer',
+  ];
+
+  const optionalRoles: UserRole[] = [
     'Records Officer',
+    'Pharmacy Coordinator',
+    'Diagnostic Coordinator',
+    'Auditor',
   ];
 
   // Helper to map current active tab to breadcrumb path matching Image 2 ("General > Dashboard")
@@ -133,25 +140,20 @@ export const OperationsTopNav: React.FC = () => {
 
       {/* Right Controls: Simulator, Notification Bell, User Profile (Image 2 style) */}
       <div className="flex items-center space-x-2 sm:space-x-3.5 shrink-0">
-        {/* 1-Click Clinical Journey Simulator Button */}
+        {/* Clinic Setup & Onboarding primary launcher button */}
         <button
           type="button"
-          onClick={runAutomatedCoreJourney}
-          disabled={isJourneyRunning}
-          className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all shadow-xs shrink-0 ${
-            isJourneyRunning
-              ? 'bg-[#ffdb43]/20 text-[#dfb400] border border-[#dfb400]/40 animate-pulse'
+          onClick={() => setActiveTab('onboarding')}
+          className={`flex items-center space-x-1.5 px-3 sm:px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all shadow-xs shrink-0 ${
+            activeTab === 'onboarding'
+              ? 'bg-[#00c0fe] text-[#0e162b] font-bold ring-2 ring-[#00c0fe]/40'
               : 'bg-[#0e162b] hover:bg-[#213364] text-white'
           }`}
-          title="Run complete clinic operational scenario"
+          title="Launch Clinic Setup and Doctor Onboarding & Affiliation flows"
         >
-          <Sparkles className="w-3.5 h-3.5 text-[#00c0fe] shrink-0" />
-          <span className="hidden md:inline">
-            {isJourneyRunning ? `Step ${journeyStep}/13 Running...` : 'Run Clinical Journey'}
-          </span>
-          <span className="md:hidden text-[11px]">
-            {isJourneyRunning ? `${journeyStep}/13` : 'Journey'}
-          </span>
+          <UserPlus className="w-3.5 h-3.5 text-[#00c0fe] shrink-0" />
+          <span className="hidden md:inline">Clinic Setup & Onboarding</span>
+          <span className="md:hidden text-[11px]">Onboarding</span>
         </button>
 
         {/* Reset Demo Data Button */}
@@ -241,10 +243,8 @@ export const OperationsTopNav: React.FC = () => {
               <span className="text-sm font-bold text-[#0e162b] block truncate">
                 Kam Ephrem
               </span>
-              <span className="inline-block mt-0.5 px-2 py-0.5 bg-[#f0f2f5] text-[#606060] text-[11px] font-medium rounded-md truncate">
-                {activeRole === 'Clinic Owner' || activeRole === 'Clinic Administrator'
-                  ? 'Super Admin'
-                  : activeRole}
+              <span className="inline-block mt-0.5 px-2 py-0.5 bg-[#f0f2f5] text-[#0e162b] text-[11px] font-semibold rounded-md truncate max-w-[150px]">
+                {activeRole}
               </span>
             </div>
             <ChevronDown className="w-3.5 h-3.5 text-[#8e8e8e] hidden sm:block shrink-0 group-hover:text-[#0e162b] transition-colors" />
@@ -252,8 +252,8 @@ export const OperationsTopNav: React.FC = () => {
 
           {/* Role switcher dropdown */}
           {isRoleMenuOpen && (
-            <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-[#e8e8e8] py-2 z-50 text-xs animate-in fade-in duration-100">
-              <div className="px-4 py-2 border-b border-[#e8e8e8] flex items-center space-x-3">
+            <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-[#e8e8e8] py-2 z-50 text-xs animate-in fade-in duration-100">
+              <div className="px-4 py-2.5 border-b border-[#e8e8e8] flex items-center space-x-3">
                 <div className="w-10 h-10 rounded-full overflow-hidden bg-[#0e162b] shrink-0">
                   <img
                     src={kamEphremAvatar}
@@ -261,34 +261,58 @@ export const OperationsTopNav: React.FC = () => {
                     className="w-full h-full object-cover"
                   />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="font-bold text-[#0e162b] text-xs">Kam Ephrem</p>
-                  <p className="text-[10px] text-[#8e8e8e]">kam.ephrem@contingenthealth.org</p>
-                  <span className="inline-block mt-0.5 px-2 py-0.5 bg-[#84ebb4]/20 text-[#1fc16b] text-[9px] font-semibold rounded-full border border-[#1fc16b]/30">
-                    Active Session: {activeRole}
+                  <p className="text-[10px] text-[#8e8e8e] truncate">kam.ephrem@contingenthealth.org</p>
+                  <span className="inline-block mt-1 px-2 py-0.5 bg-[#84ebb4]/25 text-[#1fc16b] text-[9px] font-bold rounded-full border border-[#1fc16b]/30">
+                    Active: {activeRole}
                   </span>
                 </div>
               </div>
 
-              <div className="px-4 pt-2.5 pb-1 text-[10px] font-bold uppercase tracking-wider text-[#8e8e8e]">
-                Switch Active Role Scopes
+              <div className="px-4 pt-2.5 pb-1 text-[10px] font-bold uppercase tracking-wider text-[#0e162b]">
+                Eight Core Clinic Roles
               </div>
-              {roles.map((r) => (
-                <button
-                  key={r}
-                  type="button"
-                  onClick={() => {
-                    setActiveRole(r);
-                    setIsRoleMenuOpen(false);
-                  }}
-                  className={`w-full text-left px-4 py-2 flex items-center justify-between hover:bg-[#f5f7fa] transition-colors ${
-                    activeRole === r ? 'text-[#0e162b] font-bold bg-[#aaeaff]/20' : 'text-[#333333]'
-                  }`}
-                >
-                  <span>{r}</span>
-                  {activeRole === r && <Check className="w-3.5 h-3.5 text-[#00c0fe] shrink-0" />}
-                </button>
-              ))}
+              <div className="space-y-0.5 max-h-60 overflow-y-auto">
+                {coreRoles.map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => {
+                      setActiveRole(r);
+                      setIsRoleMenuOpen(false);
+                    }}
+                    className={`w-full text-left px-4 py-2 flex items-center justify-between hover:bg-[#f0f2f5] transition-colors ${
+                      activeRole === r ? 'text-[#0e162b] font-bold bg-[#00c0fe]/10' : 'text-[#333333]'
+                    }`}
+                  >
+                    <span>{r}</span>
+                    {activeRole === r && <Check className="w-3.5 h-3.5 text-[#00c0fe] shrink-0" />}
+                  </button>
+                ))}
+              </div>
+
+              <div className="px-4 pt-3 pb-1 border-t border-[#e8e8e8] mt-1 text-[10px] font-bold uppercase tracking-wider text-[#8e8e8e]">
+                Optional Specialist Profiles
+              </div>
+              <div className="space-y-0.5">
+                {optionalRoles.map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => {
+                      setActiveRole(r);
+                      setIsRoleMenuOpen(false);
+                    }}
+                    className={`w-full text-left px-4 py-1.5 flex items-center justify-between hover:bg-[#f0f2f5] transition-colors text-xs ${
+                      activeRole === r ? 'text-[#0e162b] font-bold bg-[#00c0fe]/10' : 'text-[#606060]'
+                    }`}
+                  >
+                    <span>{r}</span>
+                    {activeRole === r && <Check className="w-3.5 h-3.5 text-[#00c0fe] shrink-0" />}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </div>

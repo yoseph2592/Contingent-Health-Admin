@@ -165,11 +165,12 @@ export const ViewDoctorWorkspace: React.FC = () => {
   ];
 
   const activeConsultationAppointments = appointments.filter((a) => a.status === 'In consultation');
+  const waitingAppointments = appointments.filter((a) => a.status === 'Checked-in');
 
   return (
     <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-4 sm:space-y-6 pb-28">
       {/* ACTIVE CONSULTATION SELECTOR STRIP */}
-      {activeConsultationAppointments.length > 0 && (
+      {activeConsultationAppointments.length > 0 ? (
         <div className="bg-white border border-[#e8e8e8] rounded-2xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
           <div className="flex items-center gap-2.5">
             <span className="w-2.5 h-2.5 rounded-full bg-[#1fc16b] animate-pulse" />
@@ -207,7 +208,36 @@ export const ViewDoctorWorkspace: React.FC = () => {
             })}
           </div>
         </div>
-      )}
+      ) : waitingAppointments.length > 0 ? (
+        <div className="bg-white border border-[#e8e8e8] rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+          <div className="flex items-center gap-2.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#dfb400]" />
+            <div>
+              <span className="text-xs font-bold text-[#0e162b] uppercase tracking-wider block">
+                No Consultations In Progress
+              </span>
+              <span className="text-xs text-[#8e8e8e]">
+                {waitingAppointments.length} patient{waitingAppointments.length > 1 ? 's' : ''} checked in and waiting in reception
+              </span>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {waitingAppointments.slice(0, 3).map((apt) => (
+              <button
+                key={apt.id}
+                type="button"
+                onClick={() => startConsultation(apt.id)}
+                className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-[#0e162b] hover:bg-[#213364] text-white rounded-full text-xs font-semibold shadow-xs transition-colors"
+              >
+                <Stethoscope className="w-3.5 h-3.5 text-[#00c0fe]" />
+                <span>Call {apt.patientName}</span>
+                <span className="text-[10px] opacity-75 font-mono">({apt.time})</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       {/* PERSISTENT PATIENT IDENTITY & TOP ACTION BAR */}
       <div className="bg-white border border-[#e8e8e8] rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-2xs space-y-4">

@@ -35,6 +35,8 @@ export const OperationsSidebar: React.FC = () => {
     claims,
     labRequests,
     notifications,
+    activeEncounter,
+    startConsultation,
     resetToInitialDemoData,
     isMobileMenuOpen,
     setIsMobileMenuOpen,
@@ -54,9 +56,14 @@ export const OperationsSidebar: React.FC = () => {
     (l) => l.status === 'Result Available' && !l.reviewedByDoctor
   ).length;
   const unreadNotifsCount = notifications.filter((n) => !n.isRead).length;
+  const activeConsultationsCount = appointments.filter(
+    (a) => a.status === 'In consultation'
+  ).length;
 
   const getBadgeForNav = (badgeKey?: string) => {
     switch (badgeKey) {
+      case 'consultations':
+        return activeConsultationsCount > 0 ? activeConsultationsCount : undefined;
       case 'appointments':
         return pendingAppointmentsCount > 0 ? pendingAppointmentsCount : undefined;
       case 'claims':
@@ -73,6 +80,17 @@ export const OperationsSidebar: React.FC = () => {
   const isOwnerOrAdmin = activeRole === 'Clinic Owner' || activeRole === 'Clinic Administrator';
 
   const handleNavSelect = (id: OperationalTab) => {
+    if (id === 'encounter') {
+      const inConsultApts = appointments.filter((a) => a.status === 'In consultation');
+      if (inConsultApts.length > 0) {
+        const isCurrentActive = inConsultApts.some(
+          (a) => a.id === activeEncounter.appointmentId || a.patientId === activeEncounter.patientId
+        );
+        if (!isCurrentActive || activeEncounter.isLocked) {
+          startConsultation(inConsultApts[0].id);
+        }
+      }
+    }
     setActiveTab(id);
     if (isMobileMenuOpen) {
       setIsMobileMenuOpen(false);
@@ -85,12 +103,12 @@ export const OperationsSidebar: React.FC = () => {
     id: OperationalTab;
     label: string;
     icon: React.ComponentType<{ className?: string }>;
-    badgeKey?: 'appointments' | 'claims' | 'labs' | 'notifications';
+    badgeKey?: 'appointments' | 'claims' | 'labs' | 'notifications' | 'consultations';
   }
 
   const generalItems: NavItemConfig[] = [
     { id: 'overview', label: 'Overview', icon: LayoutGrid },
-    { id: 'encounter', label: 'Active Consultation', icon: Stethoscope },
+    { id: 'encounter', label: 'Active Consultation', icon: Stethoscope, badgeKey: 'consultations' },
   ];
 
   const clinicalItems: NavItemConfig[] = [

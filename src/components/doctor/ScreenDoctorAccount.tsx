@@ -13,6 +13,7 @@ import {
   Eye,
   EyeOff,
   AlertCircle,
+  Sparkles,
 } from 'lucide-react';
 
 const COUNTRIES = [
@@ -307,13 +308,15 @@ export const ScreenDoctorAccount: React.FC = () => {
         </div>
 
         {/* Action Button */}
-        <div className="pt-3 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-200">
+        <div className="pt-3 flex flex-col sm:flex-row items-center justify-end gap-3 border-t border-slate-200">
           <button
             type="button"
             onClick={prefillSampleDoctor}
-            className="text-xs text-slate-500 hover:text-slate-800 underline transition-colors"
+            className="w-full sm:w-auto inline-flex items-center justify-center space-x-1.5 px-4 py-2.5 rounded-lg border border-sky-400 bg-sky-50 hover:bg-sky-100 text-sky-800 font-semibold text-xs transition-colors shadow-2xs"
+            title="Populate form with verified sample physician credentials"
           >
-            Want to test quickly? Auto-fill sample doctor details
+            <Sparkles className="w-3.5 h-3.5 text-sky-600" />
+            <span>Fill with Demo Data</span>
           </button>
 
           <button

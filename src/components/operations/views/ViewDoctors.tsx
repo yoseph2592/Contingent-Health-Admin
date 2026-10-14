@@ -6,10 +6,11 @@ import {
   Star,
   Check,
   Clock,
+  UserPlus,
 } from 'lucide-react';
 
 export const ViewDoctors: React.FC = () => {
-  const { doctors, acceptDoctorAffiliation, rejectDoctorAffiliation } = useClinicOperations();
+  const { doctors, acceptDoctorAffiliation, rejectDoctorAffiliation, setActiveTab } = useClinicOperations();
   const [selectedDoctor, setSelectedDoctor] = useState<DoctorProfileRecord>(doctors[0]);
 
   const pendingDoctors = doctors.filter((d) => d.affiliationStatus === 'Pending Review');
@@ -18,16 +19,27 @@ export const ViewDoctors: React.FC = () => {
   return (
     <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">
       {/* Header */}
-      <div>
-        <span className="text-xs font-semibold uppercase tracking-wider text-[#717171]">
-          Medical Staff
-        </span>
-        <h1 className="text-3xl font-semibold tracking-tight text-[#222222] mt-1">
-          Doctors & Affiliations
-        </h1>
-        <p className="text-sm text-[#717171] mt-0.5">
-          Credential verification, contractual splits, practice assignments, and performance
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <div>
+          <span className="text-xs font-semibold uppercase tracking-wider text-[#8e8e8e]">
+            Medical Staff
+          </span>
+          <h1 className="text-3xl font-bold tracking-tight text-[#0e162b] mt-1">
+            Doctors &amp; Affiliations
+          </h1>
+          <p className="text-sm text-[#606060] mt-0.5">
+            Credential verification, contractual splits, practice assignments, and performance
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('onboarding')}
+          className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-[#0e162b] hover:bg-[#213364] text-white text-xs font-semibold shadow-xs transition-colors self-start sm:self-auto"
+        >
+          <UserPlus className="w-4 h-4 text-[#00c0fe]" />
+          <span>Onboard / Affiliate Doctor</span>
+        </button>
       </div>
 
       {/* Pending Affiliation Requests Banner */}

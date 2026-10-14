@@ -86,6 +86,7 @@ interface ClinicOperationsContextType {
 
   acceptDoctorAffiliation: (id: string) => void;
   rejectDoctorAffiliation: (id: string) => void;
+  addOnboardedDoctor: (doctor: Partial<DoctorProfileRecord> & { name: string; specialty: string }) => void;
   markAllNotificationsRead: () => void;
 
   // Modals & UI States
@@ -506,6 +507,38 @@ export const ClinicOperationsProvider: React.FC<{ children: React.ReactNode }> =
       prev.map((d) => (d.id === id ? { ...d, affiliationStatus: 'Suspended' as const } : d))
     );
     addAuditLog(`Rejected doctor affiliation application for ${id}`, 'DoctorProfileRecord', id, 'Pending Review', 'Suspended');
+  };
+
+  const addOnboardedDoctor = (newDocData: Partial<DoctorProfileRecord> & { name: string; specialty: string }) => {
+    const id = newDocData.id || `DOC-${Math.floor(100 + Math.random() * 900)}`;
+    const newDoc: DoctorProfileRecord = {
+      id,
+      name: newDocData.name,
+      specialty: newDocData.specialty,
+      subSpecialty: newDocData.subSpecialty || 'General',
+      licenseNumber: newDocData.licenseNumber || `MD-LIC-${Math.floor(1000 + Math.random() * 9000)}`,
+      rating: newDocData.rating || 5.0,
+      reviewCount: newDocData.reviewCount || 1,
+      experienceYears: newDocData.experienceYears || 10,
+      affiliationStatus: 'Active',
+      affiliationModel: newDocData.affiliationModel || 'Sessional (70/30)',
+      contractRevenueSplit: newDocData.contractRevenueSplit || 70,
+      assignedRoom: newDocData.assignedRoom || newDocData.assignedSuite || 'Exam Room 102',
+      weeklyHours: newDocData.weeklyHours || 'Mon, Wed, Fri (08:30 - 13:00)',
+      totalConsultations: newDocData.totalConsultations || 0,
+      revenueGenerated: newDocData.revenueGenerated || 0,
+      phone: newDocData.phone || '+251 91 123 4567',
+      email: newDocData.email || 'doctor@contingenthealth.org',
+      credentialsVerified: true,
+      clinicSplit: newDocData.clinicSplit || 70,
+      doctorSplit: newDocData.doctorSplit || 20,
+      platformSplit: newDocData.platformSplit || 10,
+      assignedSuite: newDocData.assignedSuite || 'Suite 104',
+      bio: newDocData.bio || 'Consultant Physician onboarded via Contingent Health',
+      activePatientsCount: 0,
+    };
+    setDoctors((prev) => [newDoc, ...prev.filter((d) => d.id !== id)]);
+    addAuditLog(`Onboarded and affiliated new physician: ${newDoc.name} (${newDoc.specialty})`, 'DoctorProfileRecord', id, 'Registered', 'Active');
   };
 
   // Appointment Actions
@@ -1059,6 +1092,7 @@ export const ClinicOperationsProvider: React.FC<{ children: React.ReactNode }> =
 
         acceptDoctorAffiliation,
         rejectDoctorAffiliation,
+        addOnboardedDoctor,
         markAllNotificationsRead,
 
         // UI state
