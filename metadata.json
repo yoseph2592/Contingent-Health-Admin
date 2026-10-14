@@ -1,0 +1,6 @@
+{
+  "name": "Contingent Health - Clinic Platform",
+  "description": "Enterprise healthcare operating system featuring unified doctor onboarding, credential verification, and full-spectrum clinic operations from consultation to claim settlement.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

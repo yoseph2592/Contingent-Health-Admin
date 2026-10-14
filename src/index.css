@@ -1,0 +1,105 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Outfit', 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  /* FIGR COLOR SYSTEM */
+  /* Primary */
+  --color-primary-100: #8da2da;
+  --color-primary-200: #5474c7;
+  --color-primary-300: #33509d;
+  --color-primary-400: #213364;
+  --color-primary-500: #0e162b;
+
+  /* Secondary */
+  --color-secondary-100: #aaeaff;
+  --color-secondary-200: #54d5ff;
+  --color-secondary-300: #00c0fe;
+  --color-secondary-400: #0095c5;
+  --color-secondary-500: #006a8c;
+
+  /* Neutral */
+  --color-neutral-100: #ffffff;
+  --color-neutral-200: #e8e8e8;
+  --color-neutral-300: #d2d2d2;
+  --color-neutral-400: #bbbbbb;
+  --color-neutral-500: #a4a4a4;
+  --color-neutral-600: #8e8e8e;
+  --color-neutral-700: #777777;
+  --color-neutral-800: #606060;
+  --color-neutral-900: #4a4a4a;
+  --color-neutral-1000: #333333;
+
+  /* Red */
+  --color-figr-red-100: #fb3748;
+  --color-figr-red-200: #d00416;
+
+  /* Yellow */
+  --color-figr-yellow-100: #ffdb43;
+  --color-figr-yellow-200: #dfb400;
+
+  /* Green */
+  --color-figr-green-100: #84ebb4;
+  --color-figr-green-200: #1fc16b;
+}
+
+:root {
+  --color-primary-100: #8da2da;
+  --color-primary-200: #5474c7;
+  --color-primary-300: #33509d;
+  --color-primary-400: #213364;
+  --color-primary-500: #0e162b;
+  --color-primary-10: rgba(14, 22, 43, 0.1);
+
+  --color-secondary-100: #aaeaff;
+  --color-secondary-200: #54d5ff;
+  --color-secondary-300: #00c0fe;
+  --color-secondary-400: #0095c5;
+  --color-secondary-500: #006a8c;
+  --color-secondary-10: rgba(0, 192, 254, 0.1);
+
+  --color-neutral-100: #ffffff;
+  --color-neutral-200: #e8e8e8;
+  --color-neutral-300: #d2d2d2;
+  --color-neutral-400: #bbbbbb;
+  --color-neutral-500: #a4a4a4;
+  --color-neutral-600: #8e8e8e;
+  --color-neutral-700: #777777;
+  --color-neutral-800: #606060;
+  --color-neutral-900: #4a4a4a;
+  --color-neutral-1000: #333333;
+  --color-neutral-10: rgba(51, 51, 51, 0.1);
+
+  --color-red-100: #fb3748;
+  --color-red-200: #d00416;
+  --color-yellow-100: #ffdb43;
+  --color-yellow-200: #dfb400;
+  --color-green-100: #84ebb4;
+  --color-green-200: #1fc16b;
+}
+
+@layer base {
+  html, body {
+    font-family: 'Outfit', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    color: #333333;
+    background-color: #FFFFFF;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Custom subtle scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #e8e8e8;
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #bbbbbb;
+  }
+}
