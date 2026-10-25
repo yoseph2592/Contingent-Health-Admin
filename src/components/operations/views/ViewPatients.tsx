@@ -45,6 +45,8 @@ export const ViewPatients: React.FC = () => {
     setPrintDocumentData,
     externalEncounters,
     openRequestAccessModal,
+    maternalRecords,
+    setSelectedMaternalPatientId,
   } = useClinicOperations();
 
   // Search, Filter, Sort, Pagination State
@@ -650,6 +652,21 @@ export const ViewPatients: React.FC = () => {
                   </div>
 
                   <div className="flex items-center gap-2">
+                    {maternalRecords.some((m) => m.patientId === currentSelectedPatient.id) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedMaternalPatientId(currentSelectedPatient.id);
+                          setActiveTab('maternal');
+                          setIsDrawerOpen(false);
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#00c0fe]/15 hover:bg-[#00c0fe] text-[#0e162b] hover:text-white rounded-full text-xs font-semibold transition-colors border border-[#00c0fe]/30"
+                      >
+                        <HeartPulse className="w-3.5 h-3.5" />
+                        <span>Open ANC Record</span>
+                      </button>
+                    )}
+
                     <button
                       type="button"
                       onClick={() => {

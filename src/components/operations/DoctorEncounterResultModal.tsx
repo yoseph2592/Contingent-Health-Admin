@@ -19,7 +19,10 @@ import {
   Calendar,
   User,
   ShieldCheck,
+  Sparkles,
 } from 'lucide-react';
+import { DIAGNOSTIC_TEST_SCHEMAS, getTestResultSchema, DiagnosticTestSchema } from './OrderLabModal';
+import { LabRequestRecord, LabResultParameter } from '../../types/operations';
 
 interface DoctorEncounterResultModalProps {
   isOpen: boolean;
@@ -41,6 +44,8 @@ export const DoctorEncounterResultModal: React.FC<DoctorEncounterResultModalProp
     setIsPrescribeModalOpen,
     setIsOrderLabModalOpen,
     setIsReferralModalOpen,
+    orderLabTest,
+    updateLabResults,
     prescriptions,
     labRequests,
     referrals,
@@ -96,6 +101,106 @@ export const DoctorEncounterResultModal: React.FC<DoctorEncounterResultModalProp
   const [followUpDate, setFollowUpDate] = useState(
     activeEncounter.followUpDate || '2026-09-29'
   );
+
+  // Step 4 Inline Diagnostic Lab & Result Entry State
+  const [isInlineLabBuilderOpen, setIsInlineLabBuilderOpen] = useState(true);
+  const [editingLabId, setEditingLabId] = useState<string | null>(null);
+  const [selectedLabSchemaName, setSelectedLabSchemaName] = useState<string>(
+    DIAGNOSTIC_TEST_SCHEMAS[0].name
+  );
+  const [labPriority, setLabPriority] = useState<'Routine' | 'Urgent' | 'STAT'>('Routine');
+  const [labIndication, setLabIndication] = useState<string>(
+    DIAGNOSTIC_TEST_SCHEMAS[0].defaultIndication
+  );
+  const [labParamValues, setLabParamValues] = useState<Record<string, string>>(() => {
+    const init: Record<string, string> = {};
+    DIAGNOSTIC_TEST_SCHEMAS[0].parameters.forEach((p) => {
+      init[p.key] = p.demoValue;
+    });
+    return init;
+  });
+  const [labInterpretation, setLabInterpretation] = useState<string>(
+    DIAGNOSTIC_TEST_SCHEMAS[0].defaultInterpretation
+  );
+  const [labAbnormalFlag, setLabAbnormalFlag] = useState<boolean>(
+    Boolean(DIAGNOSTIC_TEST_SCHEMAS[0].defaultAbnormal)
+  );
+
+  const activeLabSchema: DiagnosticTestSchema = getTestResultSchema(selectedLabSchemaName);
+
+  const handleSelectInlineTest = (schema: DiagnosticTestSchema) => {
+    setEditingLabId(null);
+    setSelectedLabSchemaName(schema.name);
+    setLabIndication(schema.defaultIndication);
+    const nextParams: Record<string, string> = {};
+    schema.parameters.forEach((p) => {
+      nextParams[p.key] = p.demoValue;
+    });
+    setLabParamValues(nextParams);
+    setLabInterpretation(schema.defaultInterpretation);
+    setLabAbnormalFlag(Boolean(schema.defaultAbnormal));
+    setIsInlineLabBuilderOpen(true);
+  };
+
+  const handleStartEditExistingLab = (lab: LabRequestRecord) => {
+    const schema = getTestResultSchema(lab.testType);
+    setEditingLabId(lab.id);
+    setSelectedLabSchemaName(lab.testType);
+    setLabPriority(lab.priority);
+    setLabIndication(lab.clinicalIndication);
+    const nextParams: Record<string, string> = {};
+    schema.parameters.forEach((p) => {
+      const existingParam = lab.structuredResults?.find(
+        (sr) => sr.key === p.key || sr.label.toLowerCase() === p.label.toLowerCase()
+      );
+      nextParams[p.key] = existingParam?.value || p.demoValue;
+    });
+    setLabParamValues(nextParams);
+    setLabInterpretation(lab.doctorInterpretation || schema.defaultInterpretation);
+    setLabAbnormalFlag(
+      lab.isFlaggedAbnormal !== undefined ? lab.isFlaggedAbnormal : Boolean(schema.defaultAbnormal)
+    );
+    setIsInlineLabBuilderOpen(true);
+  };
+
+  const handleSaveInlineLabAndResults = () => {
+    const structuredResults: LabResultParameter[] = activeLabSchema.parameters.map((p) => ({
+      key: p.key,
+      label: p.label,
+      value: (labParamValues[p.key] || '').trim(),
+      unit: p.unit,
+      referenceRange: p.referenceRange,
+    }));
+
+    const summaryString = structuredResults
+      .filter((r) => r.value !== '')
+      .map((r) => `${r.label}: ${r.value} ${r.unit}`.trim())
+      .join(' · ');
+
+    if (editingLabId) {
+      updateLabResults(editingLabId, {
+        structuredResults,
+        resultsSummary: summaryString || 'Results recorded during encounter',
+        doctorInterpretation: labInterpretation,
+        isFlaggedAbnormal: labAbnormalFlag,
+      });
+      setEditingLabId(null);
+    } else {
+      orderLabTest(
+        selectedLabSchemaName,
+        activeLabSchema.dept,
+        labIndication,
+        labPriority,
+        activeLabSchema.defaultInstructions,
+        {
+          structuredResults,
+          resultsSummary: summaryString,
+          doctorInterpretation: labInterpretation,
+          isFlaggedAbnormal: labAbnormalFlag,
+        }
+      );
+    }
+  };
 
   // Step 5: Sign & Finalize
   const [physicianConfirmation, setPhysicianConfirmation] = useState(true);
@@ -202,10 +307,10 @@ export const DoctorEncounterResultModal: React.FC<DoctorEncounterResultModalProp
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="relative w-full max-w-3xl max-h-[90vh] bg-white rounded-3xl shadow-2xl border border-[#e8e8e8] flex flex-col overflow-hidden">
-        {/* MODAL HEADER */}
-        <div className="p-6 border-b border-[#e8e8e8] bg-white shrink-0">
+    <div className="w-full animate-in fade-in duration-200">
+      <div className="relative w-full bg-white rounded-3xl shadow-2xs border border-[#e8e8e8] flex flex-col overflow-hidden">
+        {/* PAGE HEADER */}
+        <div className="p-6 sm:p-8 border-b border-[#e8e8e8] bg-white shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 rounded-2xl bg-[#00c0fe]/15 text-[#00c0fe] flex items-center justify-center font-bold text-sm">
@@ -292,8 +397,8 @@ export const DoctorEncounterResultModal: React.FC<DoctorEncounterResultModalProp
           </div>
         </div>
 
-        {/* MODAL BODY (STEP CONTENT) */}
-        <div className="p-6 overflow-y-auto space-y-6 flex-1 text-xs">
+        {/* PAGE BODY (STEP CONTENT) */}
+        <div className="p-6 sm:p-8 space-y-6 flex-1 text-xs">
           {/* STEP 1: VITALS & CHIEF COMPLAINT */}
           {currentStep === 1 && (
             <div className="space-y-6 animate-in fade-in duration-200">
@@ -638,30 +743,81 @@ export const DoctorEncounterResultModal: React.FC<DoctorEncounterResultModalProp
                   <button
                     type="button"
                     onClick={() => setIsOrderLabModalOpen(true)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-[#e8e8e8] hover:border-[#0e162b] text-[#0e162b] rounded-full font-semibold transition-colors shadow-2xs text-xs"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white border border-[#e8e8e8] hover:border-[#0e162b] text-[#0e162b] rounded-full font-semibold transition-colors shadow-2xs text-xs"
                   >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Order Lab Test</span>
+                    <Plus className="w-3.5 h-3.5 text-[#00c0fe]" />
+                    <span>Enter Test Results</span>
                   </button>
                 </div>
 
+                {/* Recorded / Ordered Labs List for Current Patient */}
                 {currentPatientLabs.length === 0 ? (
                   <p className="text-xs text-[#717171] py-2">
-                    No laboratory tests ordered for this encounter.
+                    No laboratory test results entered for this encounter yet.
                   </p>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-2.5">
                     {currentPatientLabs.map((lab) => (
-                      <div key={lab.id} className="p-3 bg-white rounded-xl border border-[#EBEBEB] flex items-center justify-between">
-                        <div>
-                          <span className="font-semibold text-[#222222]">{lab.testType}</span>
-                          <span className="text-[11px] text-[#717171] block">
-                            Priority: {lab.priority} · {lab.clinicalIndication}
-                          </span>
+                      <div
+                        key={lab.id}
+                        className="p-3.5 bg-white rounded-xl border border-[#e8e8e8] space-y-2"
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-xs text-[#0e162b]">
+                                {lab.testType}
+                              </span>
+                              <span
+                                className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                                  lab.status === 'Result Available' || lab.resultsSummary
+                                    ? 'bg-[#84ebb4]/25 text-[#1fc16b] border border-[#1fc16b]/20'
+                                    : 'bg-[#f5f7fa] text-[#606060] border border-[#e8e8e8]'
+                                }`}
+                              >
+                                {lab.status}
+                              </span>
+                              {lab.isFlaggedAbnormal && (
+                                <span className="px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 text-xs font-semibold">
+                                  Abnormal Flag
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-xs text-[#606060] block mt-0.5">
+                              {lab.department} · Priority: {lab.priority} · {lab.clinicalIndication}
+                            </span>
+                          </div>
                         </div>
-                        <span className="px-2 py-0.5 rounded-full bg-[#F7F7F7] text-[11px] font-medium text-[#717171]">
-                          {lab.status}
-                        </span>
+
+                        {lab.structuredResults && lab.structuredResults.length > 0 ? (
+                          <div className="pt-2 border-t border-[#e8e8e8] space-y-1.5">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                              {lab.structuredResults
+                                .filter((sr) => sr.value.trim() !== '')
+                                .map((sr) => (
+                                  <div
+                                    key={sr.key}
+                                    className="px-2.5 py-1.5 rounded-lg bg-[#f5f7fa] border border-[#e8e8e8] flex flex-col"
+                                  >
+                                    <span className="text-xs text-[#606060]">{sr.label}</span>
+                                    <span className="text-xs font-bold text-[#0e162b]">
+                                      {sr.value} {sr.unit}
+                                    </span>
+                                  </div>
+                                ))}
+                            </div>
+                            {lab.doctorInterpretation && (
+                              <p className="text-xs text-[#333333] bg-[#f5f7fa] px-3 py-1.5 rounded-lg">
+                                <strong className="text-[#0e162b]">Interpretation:</strong>{' '}
+                                {lab.doctorInterpretation}
+                              </p>
+                            )}
+                          </div>
+                        ) : lab.resultsSummary ? (
+                          <div className="pt-2 border-t border-[#e8e8e8] text-xs text-[#0e162b]">
+                            <strong>Recorded Results:</strong> {lab.resultsSummary}
+                          </div>
+                        ) : null}
                       </div>
                     ))}
                   </div>

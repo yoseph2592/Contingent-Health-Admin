@@ -8,6 +8,7 @@ import {
   EncounterRecord,
   PrescriptionRecord,
   LabRequestRecord,
+  LabResultParameter,
   ReferralRecord,
   ClinicalDocument,
   FinancialTransaction,
@@ -22,6 +23,11 @@ import {
   DoctorProfileRecord,
   ClinicProfileRecord,
   ExternalHistoricalEncounter,
+  MaternalRecord,
+  AncRiskAssessment,
+  AncContactVisit,
+  MaternalMedicationTrackingItem,
+  MaternalFollowUpSchedule,
 } from '../types/operations';
 import {
   INITIAL_PATIENTS,
@@ -39,6 +45,7 @@ import {
   INITIAL_AUDIT_LOGS,
   INITIAL_NOTIFICATIONS,
   INITIAL_EXTERNAL_ENCOUNTERS,
+  INITIAL_MATERNAL_RECORDS,
 } from '../data/mockOperationsData';
 
 interface PatientSyncAlert {
@@ -83,6 +90,61 @@ interface ClinicOperationsContextType {
   currentClinic: ClinicProfileRecord;
   auditLogs: AuditLogEntry[];
   notifications: OperationalNotification[];
+
+  // Maternal Tracking (ANC) State & Actions
+  maternalRecords: MaternalRecord[];
+  selectedMaternalPatientId: string | null;
+  setSelectedMaternalPatientId: (patientId: string | null) => void;
+  updateMaternalRegistration: (
+    maternalId: string,
+    updates: Partial<
+      Pick<
+        MaternalRecord,
+        | 'ancRegistrationNumber'
+        | 'lmpDate'
+        | 'eddDate'
+        | 'currentGestationalWeeks'
+        | 'currentGestationalDays'
+        | 'trimester'
+        | 'gravida'
+        | 'para'
+        | 'childrenAlive'
+        | 'maritalStatus'
+        | 'carePlanSummary'
+        | 'deliveryPlanFacility'
+        | 'emergencyReadinessNotes'
+      >
+    >
+  ) => void;
+  updateMaternalRiskAssessment: (maternalId: string, riskAssessment: AncRiskAssessment) => void;
+  saveMaternalContactVisit: (maternalId: string, contactVisit: AncContactVisit) => void;
+  addMaternalMedicationItem: (maternalId: string, item: Omit<MaternalMedicationTrackingItem, 'id'>) => void;
+  updateMaternalMedicationAdherence: (
+    maternalId: string,
+    medicationId: string,
+    adherence: MaternalMedicationTrackingItem['patientReportedAdherence'],
+    prescribedStatus: MaternalMedicationTrackingItem['prescribedStatus'],
+    adherenceNotes: string
+  ) => void;
+  scheduleMaternalFollowUp: (maternalId: string, schedule: Omit<MaternalFollowUpSchedule, 'id'>) => void;
+  updateMaternalFollowUpStatus: (
+    maternalId: string,
+    scheduleId: string,
+    status: MaternalFollowUpSchedule['status'],
+    newDate?: string
+  ) => void;
+  enrollNewMaternalPatient: (data: {
+    patientId: string;
+    ancRegistrationNumber: string;
+    lmpDate: string;
+    eddDate: string;
+    currentGestationalWeeks: number;
+    currentGestationalDays: number;
+    gravida: number;
+    para: number;
+    childrenAlive: number;
+    maritalStatus: MaternalRecord['maritalStatus'];
+  }) => void;
 
   acceptDoctorAffiliation: (id: string) => void;
   rejectDoctorAffiliation: (id: string) => void;
@@ -147,7 +209,22 @@ interface ClinicOperationsContextType {
     department: string,
     clinicalIndication: string,
     priority: 'Routine' | 'Urgent' | 'STAT',
-    instructions: string
+    instructions: string,
+    resultData?: {
+      structuredResults?: LabResultParameter[];
+      resultsSummary?: string;
+      doctorInterpretation?: string;
+      isFlaggedAbnormal?: boolean;
+    }
+  ) => void;
+  updateLabResults: (
+    labId: string,
+    resultData: {
+      structuredResults: LabResultParameter[];
+      resultsSummary: string;
+      doctorInterpretation?: string;
+      isFlaggedAbnormal?: boolean;
+    }
   ) => void;
 
   createReferralOrder: (
@@ -289,6 +366,10 @@ export const ClinicOperationsProvider: React.FC<{ children: React.ReactNode }> =
   const [staff, setStaff] = useState<StaffMember[]>(INITIAL_STAFF);
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>(INITIAL_AUDIT_LOGS);
   const [notifications, setNotifications] = useState<OperationalNotification[]>(INITIAL_NOTIFICATIONS);
+
+  // Maternal Tracking (ANC) state
+  const [maternalRecords, setMaternalRecords] = useState<MaternalRecord[]>(INITIAL_MATERNAL_RECORDS);
+  const [selectedMaternalPatientId, setSelectedMaternalPatientId] = useState<string | null>(null);
 
   // UI state
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -747,9 +828,36 @@ export const ClinicOperationsProvider: React.FC<{ children: React.ReactNode }> =
     department: string,
     clinicalIndication: string,
     priority: 'Routine' | 'Urgent' | 'STAT',
-    instructions: string
+    instructions: string,
+    resultData?: {
+      structuredResults?: LabResultParameter[];
+      resultsSummary?: string;
+      doctorInterpretation?: string;
+      isFlaggedAbnormal?: boolean;
+    }
   ) => {
     const newLabId = `LAB-${Math.floor(9000 + Math.random() * 999)}`;
+    const hasResults =
+      Boolean(resultData?.resultsSummary?.trim()) ||
+      Boolean(resultData?.structuredResults && resultData.structuredResults.some((r) => r.value.trim() !== ''));
+    const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 16);
+
+    const computedSummary =
+      resultData?.resultsSummary?.trim() ||
+      (resultData?.structuredResults
+        ? resultData.structuredResults
+            .filter((r) => r.value.trim() !== '')
+            .map((r) => `${r.label}: ${r.value} ${r.unit}`.trim())
+            .join(' | ')
+        : undefined);
+
+    const computedRefRange = resultData?.structuredResults
+      ? resultData.structuredResults
+          .filter((r) => r.value.trim() !== '')
+          .map((r) => `${r.label}: ${r.referenceRange}`)
+          .join(' | ')
+      : undefined;
+
     const newLab: LabRequestRecord = {
       id: newLabId,
       encounterId: activeEncounter.id,
@@ -764,17 +872,74 @@ export const ClinicOperationsProvider: React.FC<{ children: React.ReactNode }> =
       priority,
       instructions,
       diagnosis: activeEncounter.diagnoses[0]?.description || 'Clinical Evaluation',
-      status: 'In Progress',
-      requestedAt: new Date().toISOString().replace('T', ' ').slice(0, 16),
+      status: hasResults ? 'Result Available' : 'In Progress',
+      requestedAt: timestamp,
+      ...(hasResults
+        ? {
+            resultDate: timestamp.split(' ')[0],
+            resultsSummary: computedSummary,
+            referenceRange: computedRefRange,
+            doctorInterpretation: resultData?.doctorInterpretation || 'Reviewed and recorded by attending physician.',
+            isFlaggedAbnormal: Boolean(resultData?.isFlaggedAbnormal),
+            reviewedByDoctor: true,
+            structuredResults: resultData?.structuredResults,
+          }
+        : {}),
     };
 
     setLabRequests((prev) => [newLab, ...prev]);
-    addAuditLog(`Ordered diagnostic laboratory examination ${newLabId}`, 'LabRequestRecord', newLabId, 'None', 'In Progress');
+    addAuditLog(
+      hasResults
+        ? `Ordered and recorded diagnostic lab results for ${testType} (${newLabId})`
+        : `Ordered diagnostic laboratory examination ${newLabId}`,
+      'LabRequestRecord',
+      newLabId,
+      'None',
+      hasResults ? 'Result Available' : 'In Progress'
+    );
     triggerPatientSync(
-      'Diagnostic Order Generated',
-      `Laboratory order for ${testType} placed by doctor. Fasting preparation instructions available in your app.`,
+      hasResults ? 'Diagnostic Lab Results Recorded' : 'Diagnostic Order Generated',
+      hasResults
+        ? `Results for ${testType} have been entered and verified by ${activeEncounter.doctorName}.`
+        : `Laboratory order for ${testType} placed by doctor. Fasting preparation instructions available in your app.`,
       'lab'
     );
+  };
+
+  const updateLabResults = (
+    labId: string,
+    resultData: {
+      structuredResults: LabResultParameter[];
+      resultsSummary: string;
+      doctorInterpretation?: string;
+      isFlaggedAbnormal?: boolean;
+    }
+  ) => {
+    const timestamp = new Date().toISOString().split('T')[0];
+    const computedRefRange = resultData.structuredResults
+      .filter((r) => r.value.trim() !== '')
+      .map((r) => `${r.label}: ${r.referenceRange}`)
+      .join(' | ');
+
+    setLabRequests((prev) =>
+      prev.map((lab) =>
+        lab.id === labId
+          ? {
+              ...lab,
+              status: 'Result Available',
+              resultDate: timestamp,
+              resultsSummary: resultData.resultsSummary,
+              referenceRange: computedRefRange || lab.referenceRange,
+              doctorInterpretation:
+                resultData.doctorInterpretation || lab.doctorInterpretation || 'Verified during clinical encounter.',
+              isFlaggedAbnormal: Boolean(resultData.isFlaggedAbnormal),
+              reviewedByDoctor: true,
+              structuredResults: resultData.structuredResults,
+            }
+          : lab
+      )
+    );
+    addAuditLog(`Recorded diagnostic lab results for ${labId}`, 'LabRequestRecord', labId, 'In Progress', 'Result Available');
   };
 
   const createReferralOrder = (
@@ -1030,6 +1195,329 @@ export const ClinicOperationsProvider: React.FC<{ children: React.ReactNode }> =
     }, 8500);
   };
 
+  // Maternal Tracking (ANC) Handlers
+  const updateMaternalRegistration: ClinicOperationsContextType['updateMaternalRegistration'] = (
+    maternalId,
+    updates
+  ) => {
+    setMaternalRecords((prev) =>
+      prev.map((rec) => (rec.id === maternalId ? { ...rec, ...updates } : rec))
+    );
+    addAuditLog(
+      `Updated ANC registration & pregnancy profile (${updates.ancRegistrationNumber || maternalId})`,
+      'MaternalRecord',
+      maternalId,
+      'Previous ANC Profile',
+      'Updated ANC Profile'
+    );
+  };
+
+  const updateMaternalRiskAssessment: ClinicOperationsContextType['updateMaternalRiskAssessment'] = (
+    maternalId,
+    riskAssessment
+  ) => {
+    setMaternalRecords((prev) =>
+      prev.map((rec) => (rec.id === maternalId ? { ...rec, riskAssessment } : rec))
+    );
+    addAuditLog(
+      `Updated ANC Risk Assessment -> ${riskAssessment.classification}`,
+      'MaternalRecord',
+      maternalId,
+      'Prior Evaluation',
+      riskAssessment.classification
+    );
+    triggerPatientSync(
+      'ANC Care Plan Updated',
+      `Your antenatal risk evaluation (${riskAssessment.classification}) has been updated by ${riskAssessment.evaluatedBy}.`,
+      'apt'
+    );
+  };
+
+  const saveMaternalContactVisit: ClinicOperationsContextType['saveMaternalContactVisit'] = (
+    maternalId,
+    contactVisit
+  ) => {
+    setMaternalRecords((prev) =>
+      prev.map((rec) => {
+        if (rec.id !== maternalId) return rec;
+        const exists = rec.contacts.some((c) => c.id === contactVisit.id);
+        const updatedContacts = exists
+          ? rec.contacts.map((c) => (c.id === contactVisit.id ? contactVisit : c))
+          : [...rec.contacts, contactVisit].sort((a, b) => a.contactNumber - b.contactNumber);
+        return {
+          ...rec,
+          currentGestationalWeeks: contactVisit.gestationalAgeWeeks || rec.currentGestationalWeeks,
+          currentGestationalDays: contactVisit.gestationalAgeDays ?? rec.currentGestationalDays,
+          contacts: updatedContacts,
+        };
+      })
+    );
+    addAuditLog(
+      `Recorded ANC ${contactVisit.targetWeeksLabel} findings`,
+      'MaternalRecord',
+      maternalId,
+      'Scheduled',
+      contactVisit.status
+    );
+    triggerPatientSync(
+      'Antenatal Contact Recorded',
+      `Clinical findings and care summary for ${contactVisit.targetWeeksLabel} have been saved to your ANC longitudinal record.`,
+      'apt'
+    );
+  };
+
+  const addMaternalMedicationItem: ClinicOperationsContextType['addMaternalMedicationItem'] = (
+    maternalId,
+    item
+  ) => {
+    const newItem: MaternalMedicationTrackingItem = {
+      ...item,
+      id: `MED-MAT-${Math.floor(100 + Math.random() * 900)}`,
+    };
+    setMaternalRecords((prev) =>
+      prev.map((rec) =>
+        rec.id === maternalId
+          ? { ...rec, medicationTracking: [newItem, ...rec.medicationTracking] }
+          : rec
+      )
+    );
+    addAuditLog(
+      `Added maternal medication/prophylaxis: ${item.name}`,
+      'MaternalRecord',
+      maternalId,
+      'None',
+      item.prescribedStatus
+    );
+    triggerPatientSync(
+      'Maternal Medication Updated',
+      `${item.name} (${item.dosageAndSchedule}) has been added to your antenatal care regimen.`,
+      'rx'
+    );
+  };
+
+  const updateMaternalMedicationAdherence: ClinicOperationsContextType['updateMaternalMedicationAdherence'] = (
+    maternalId,
+    medicationId,
+    adherence,
+    prescribedStatus,
+    adherenceNotes
+  ) => {
+    setMaternalRecords((prev) =>
+      prev.map((rec) =>
+        rec.id === maternalId
+          ? {
+              ...rec,
+              medicationTracking: rec.medicationTracking.map((m) =>
+                m.id === medicationId
+                  ? { ...m, patientReportedAdherence: adherence, prescribedStatus, adherenceNotes }
+                  : m
+              ),
+            }
+          : rec
+      )
+    );
+    addAuditLog(
+      `Updated maternal medication adherence (${medicationId})`,
+      'MaternalRecord',
+      maternalId,
+      'Previous',
+      `${prescribedStatus} · ${adherence}`
+    );
+  };
+
+  const scheduleMaternalFollowUp: ClinicOperationsContextType['scheduleMaternalFollowUp'] = (
+    maternalId,
+    schedule
+  ) => {
+    const newSchedule: MaternalFollowUpSchedule = {
+      ...schedule,
+      id: `FUP-${Math.floor(1000 + Math.random() * 9000)}`,
+    };
+    const targetRec = maternalRecords.find((r) => r.id === maternalId);
+
+    setMaternalRecords((prev) =>
+      prev.map((rec) =>
+        rec.id === maternalId
+          ? { ...rec, followUpSchedules: [newSchedule, ...rec.followUpSchedules] }
+          : rec
+      )
+    );
+
+    if (targetRec) {
+      const newAptId = `APT-${Math.floor(9000 + Math.random() * 999)}`;
+      const newApt: AppointmentRecord = {
+        id: newAptId,
+        patientId: targetRec.patientId,
+        patientName: targetRec.patientName,
+        patientAge: targetRec.patientAge,
+        patientSex: 'Female',
+        patientPhone: targetRec.phone,
+        doctorId: targetRec.affiliatedDoctorId,
+        doctorName: schedule.assignedDoctorName || targetRec.affiliatedDoctorName,
+        specialty: 'Obstetrics & Antenatal Care',
+        date: schedule.scheduledDate,
+        time: schedule.scheduledTime,
+        durationMinutes: 30,
+        visitType: 'Follow-up Review',
+        reasonForVisit: schedule.contactPurpose,
+        symptoms: [],
+        status: 'Scheduled',
+        requestedAt: new Date().toISOString().slice(0, 16).replace('T', ' '),
+        supportingDocs: [],
+        paymentStatus: 'Covered by Insurance',
+        amount: 95.0,
+        room: 'Consultation Suite 101',
+        triagePriority:
+          targetRec.riskAssessment.classification === 'Specialized / High-Risk Care'
+            ? 'Priority'
+            : 'Normal',
+      };
+      setAppointments((prev) => [newApt, ...prev]);
+    }
+
+    addAuditLog(
+      `Scheduled ANC follow-up (${schedule.intervalType}) on ${schedule.scheduledDate}`,
+      'MaternalRecord',
+      maternalId,
+      'None',
+      'Scheduled'
+    );
+    triggerPatientSync(
+      'ANC Follow-Up Scheduled',
+      `Your next antenatal contact (${schedule.contactPurpose}) is scheduled for ${schedule.scheduledDate} at ${schedule.scheduledTime}.`,
+      'apt'
+    );
+  };
+
+  const updateMaternalFollowUpStatus: ClinicOperationsContextType['updateMaternalFollowUpStatus'] = (
+    maternalId,
+    scheduleId,
+    status,
+    newDate
+  ) => {
+    setMaternalRecords((prev) =>
+      prev.map((rec) =>
+        rec.id === maternalId
+          ? {
+              ...rec,
+              followUpSchedules: rec.followUpSchedules.map((s) =>
+                s.id === scheduleId
+                  ? { ...s, status, scheduledDate: newDate || s.scheduledDate }
+                  : s
+              ),
+            }
+          : rec
+      )
+    );
+    addAuditLog(
+      `Updated ANC follow-up ${scheduleId} to ${status}`,
+      'MaternalRecord',
+      maternalId,
+      'Scheduled',
+      status
+    );
+  };
+
+  const enrollNewMaternalPatient: ClinicOperationsContextType['enrollNewMaternalPatient'] = (data) => {
+    const pat = patients.find((p) => p.id === data.patientId);
+    if (!pat) return;
+
+    const trimester: MaternalRecord['trimester'] =
+      data.currentGestationalWeeks < 14
+        ? '1st Trimester'
+        : data.currentGestationalWeeks < 28
+        ? '2nd Trimester'
+        : '3rd Trimester';
+
+    const newMatId = `MAT-2026-00${maternalRecords.length + 1}`;
+    const defaultContacts: AncContactVisit[] = [12, 20, 26, 30, 34, 36, 38, 40].map((wks, idx) => ({
+      id: `CNT-${newMatId}-${idx + 1}`,
+      contactNumber: idx + 1,
+      targetWeeksLabel: `Contact ${idx + 1} (${idx === 0 ? 'Up to 12' : wks} wks)`,
+      status: idx === 0 ? 'Scheduled' : 'Upcoming',
+      date: idx === 0 ? new Date().toISOString().split('T')[0] : undefined,
+      presentPregnancyComplaints: '',
+      pastPregnancyHistoryNotes: '',
+      medicalAndSurgicalHistoryNotes: '',
+      mentalHealthAndSocialHistory: '',
+      physicalExam: {
+        weightKg: '',
+        bloodPressure: '',
+        pallor: '',
+        jaundice: '',
+        edema: '',
+        breastAndChestExam: '',
+        symphysisFundalHeightCm: '',
+        fetalPresentation: '',
+        fetalHeartRateBpm: '',
+        fetalMovement: '',
+      },
+      investigations: {
+        hemoglobin: '',
+        bloodGroupAndRh: pat.bloodType,
+        urinalysisProteinGlucose: '',
+        syphilisHivHepBScreening: '',
+        bloodGlucoseOgtt: '',
+        ultrasoundFindings: '',
+        otherLabs: '',
+      },
+      medicationsAndVaccines: {
+        ironAndFolicAcid: '',
+        calciumSupplementation: '',
+        tetanusDiphtheriaVaccine: '',
+        dewormingOrIptp: '',
+        otherPrescriptions: '',
+      },
+      adviceAndCounselling: '',
+      clinicalAssessmentAndDangerSigns: '',
+      actionsTaken: '',
+      nextAppointmentDate: '',
+    }));
+
+    const templateRisk = INITIAL_MATERNAL_RECORDS[0].riskAssessment;
+    const newRecord: MaternalRecord = {
+      id: newMatId,
+      patientId: pat.id,
+      patientName: pat.fullName,
+      patientAge: pat.age,
+      bloodType: pat.bloodType,
+      phone: pat.phone,
+      affiliatedDoctorId: pat.affiliatedDoctorId,
+      affiliatedDoctorName: pat.affiliatedDoctorName,
+      ancRegistrationNumber: data.ancRegistrationNumber,
+      registrationDate: new Date().toISOString().split('T')[0],
+      lmpDate: data.lmpDate,
+      eddDate: data.eddDate,
+      currentGestationalWeeks: data.currentGestationalWeeks,
+      currentGestationalDays: data.currentGestationalDays,
+      trimester,
+      gravida: data.gravida,
+      para: data.para,
+      childrenAlive: data.childrenAlive,
+      maritalStatus: data.maritalStatus,
+      riskAssessment: {
+        obstetricHistory: templateRisk.obstetricHistory.map((i) => ({ ...i, present: false, notes: '' })),
+        currentPregnancy: templateRisk.currentPregnancy.map((i) => ({ ...i, present: false, notes: '' })),
+        generalMedical: templateRisk.generalMedical.map((i) => ({ ...i, present: false, notes: '' })),
+        physicalExamAndCounselling: templateRisk.physicalExamAndCounselling.map((i) => ({ ...i, present: false, notes: '' })),
+        classification: 'Pending Physician Classification',
+        classificationRationale: 'Newly enrolled in ANC; awaiting baseline physician risk evaluation.',
+        evaluatedBy: 'Pending Evaluation',
+        evaluatedAt: 'Not yet signed',
+      },
+      contacts: defaultContacts,
+      medicationTracking: [],
+      followUpSchedules: [],
+      carePlanSummary: 'Initial ANC booking initiated. Complete Step B Risk Classification and Contact 1 baseline examination.',
+      deliveryPlanFacility: currentClinicName,
+      emergencyReadinessNotes: `Emergency contact: ${pat.emergencyContact.name} (${pat.emergencyContact.phone})`,
+    };
+
+    setMaternalRecords((prev) => [newRecord, ...prev]);
+    setSelectedMaternalPatientId(pat.id);
+    addAuditLog(`Enrolled patient ${pat.fullName} in Maternal Care (${data.ancRegistrationNumber})`, 'MaternalRecord', newMatId, 'Unenrolled', 'Enrolled');
+  };
+
   const resetToInitialDemoData = () => {
     setPatients(INITIAL_PATIENTS);
     setAppointments(INITIAL_APPOINTMENTS);
@@ -1045,6 +1533,8 @@ export const ClinicOperationsProvider: React.FC<{ children: React.ReactNode }> =
     setAuditLogs(INITIAL_AUDIT_LOGS);
     setNotifications(INITIAL_NOTIFICATIONS);
     setExternalEncounters(INITIAL_EXTERNAL_ENCOUNTERS);
+    setMaternalRecords(INITIAL_MATERNAL_RECORDS);
+    setSelectedMaternalPatientId(null);
     setRequestAccessModalEncounter(null);
     setAccessToast(null);
     setActiveTab('overview');
@@ -1089,6 +1579,18 @@ export const ClinicOperationsProvider: React.FC<{ children: React.ReactNode }> =
         currentClinic,
         auditLogs,
         notifications,
+
+        maternalRecords,
+        selectedMaternalPatientId,
+        setSelectedMaternalPatientId,
+        updateMaternalRegistration,
+        updateMaternalRiskAssessment,
+        saveMaternalContactVisit,
+        addMaternalMedicationItem,
+        updateMaternalMedicationAdherence,
+        scheduleMaternalFollowUp,
+        updateMaternalFollowUpStatus,
+        enrollNewMaternalPatient,
 
         acceptDoctorAffiliation,
         rejectDoctorAffiliation,
@@ -1140,6 +1642,7 @@ export const ClinicOperationsProvider: React.FC<{ children: React.ReactNode }> =
         createPrescription,
         fulfillPrescription,
         orderLabTest,
+        updateLabResults,
         createReferralOrder,
         updateClaimStatus,
         addAuditLog,

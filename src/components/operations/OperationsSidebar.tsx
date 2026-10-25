@@ -22,6 +22,7 @@ import {
   FileSignature,
   FileText,
   History,
+  HeartPulse,
   X,
 } from 'lucide-react';
 import { OperationalTab } from '../../types/operations';
@@ -113,6 +114,7 @@ export const OperationsSidebar: React.FC = () => {
 
   const clinicalItems: NavItemConfig[] = [
     { id: 'patients', label: 'Patients', icon: Users },
+    { id: 'maternal', label: 'Maternal Tracking', icon: HeartPulse },
     { id: 'appointments', label: 'Appointments', icon: Calendar, badgeKey: 'appointments' },
     { id: 'prescriptions', label: 'Prescription', icon: Pill },
     { id: 'diagnostics', label: 'Diagnostic Orders', icon: FlaskConical, badgeKey: 'labs' },

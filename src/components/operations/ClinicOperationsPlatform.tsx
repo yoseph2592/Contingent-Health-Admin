@@ -14,6 +14,7 @@ import { canRoleAccessTab, getDefaultTabForRole } from '../../utils/rolePermissi
 
 import { ViewOverview } from './views/ViewOverview';
 import { ViewPatients } from './views/ViewPatients';
+import { ViewMaternalTracking } from './views/ViewMaternalTracking';
 import { ViewAppointments } from './views/ViewAppointments';
 import { ViewDoctorWorkspace } from './views/ViewDoctorWorkspace';
 import { ViewPrescriptions } from './views/ViewPrescriptions';
@@ -73,6 +74,8 @@ export const ClinicOperationsPlatform: React.FC = () => {
         return <ViewOverview />;
       case 'patients':
         return <ViewPatients />;
+      case 'maternal':
+        return <ViewMaternalTracking />;
       case 'appointments':
       case 'check-in':
         return <ViewAppointments />;

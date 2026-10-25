@@ -89,6 +89,7 @@ export const ROLE_DEFINITIONS: Record<UserRole, RoleDefinition> = {
     allowedTabs: [
       'overview',
       'patients',
+      'maternal',
       'appointments',
       'encounter',
       'doctors',
@@ -144,6 +145,7 @@ export const ROLE_DEFINITIONS: Record<UserRole, RoleDefinition> = {
     allowedTabs: [
       'overview',
       'patients',
+      'maternal',
       'appointments',
       'doctors',
       'staff',
@@ -196,6 +198,7 @@ export const ROLE_DEFINITIONS: Record<UserRole, RoleDefinition> = {
     allowedTabs: [
       'overview',
       'patients',
+      'maternal',
       'appointments',
       'encounter',
       'prescriptions',
@@ -255,6 +258,7 @@ export const ROLE_DEFINITIONS: Record<UserRole, RoleDefinition> = {
       'overview',
       'doctors',
       'patients',
+      'maternal',
       'appointments',
       'encounter',
       'prescriptions',
@@ -301,6 +305,7 @@ export const ROLE_DEFINITIONS: Record<UserRole, RoleDefinition> = {
     allowedTabs: [
       'overview',
       'patients',
+      'maternal',
       'appointments',
       'encounter',
       'prescriptions',
@@ -348,6 +353,7 @@ export const ROLE_DEFINITIONS: Record<UserRole, RoleDefinition> = {
     allowedTabs: [
       'overview',
       'patients',
+      'maternal',
       'appointments',
       'diagnostics',
       'documents',

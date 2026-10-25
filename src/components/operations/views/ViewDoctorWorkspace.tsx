@@ -169,76 +169,6 @@ export const ViewDoctorWorkspace: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-4 sm:space-y-6 pb-28">
-      {/* ACTIVE CONSULTATION SELECTOR STRIP */}
-      {activeConsultationAppointments.length > 0 ? (
-        <div className="bg-white border border-[#e8e8e8] rounded-2xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
-          <div className="flex items-center gap-2.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#1fc16b] animate-pulse" />
-            <span className="text-xs font-bold text-[#0e162b] uppercase tracking-wider">
-              Active Consultations In Progress ({activeConsultationAppointments.length})
-            </span>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            {activeConsultationAppointments.map((apt) => {
-              const isSelected =
-                apt.id === activeEncounter.appointmentId || apt.patientId === activeEncounter.patientId;
-              return (
-                <button
-                  key={apt.id}
-                  type="button"
-                  onClick={() => startConsultation(apt.id)}
-                  className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
-                    isSelected
-                      ? 'bg-[#00c0fe] text-white shadow-xs'
-                      : 'bg-[#f0f2f5] hover:bg-[#e4e7ec] text-[#333333]'
-                  }`}
-                >
-                  <Stethoscope className="w-3.5 h-3.5" />
-                  <span>{apt.patientName}</span>
-                  <span
-                    className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${
-                      isSelected ? 'bg-white/20 text-white' : 'bg-black/5 text-[#606060]'
-                    }`}
-                  >
-                    {apt.room || 'Suite 101'}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      ) : waitingAppointments.length > 0 ? (
-        <div className="bg-white border border-[#e8e8e8] rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
-          <div className="flex items-center gap-2.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#dfb400]" />
-            <div>
-              <span className="text-xs font-bold text-[#0e162b] uppercase tracking-wider block">
-                No Consultations In Progress
-              </span>
-              <span className="text-xs text-[#8e8e8e]">
-                {waitingAppointments.length} patient{waitingAppointments.length > 1 ? 's' : ''} checked in and waiting in reception
-              </span>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            {waitingAppointments.slice(0, 3).map((apt) => (
-              <button
-                key={apt.id}
-                type="button"
-                onClick={() => startConsultation(apt.id)}
-                className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-[#0e162b] hover:bg-[#213364] text-white rounded-full text-xs font-semibold shadow-xs transition-colors"
-              >
-                <Stethoscope className="w-3.5 h-3.5 text-[#00c0fe]" />
-                <span>Call {apt.patientName}</span>
-                <span className="text-[10px] opacity-75 font-mono">({apt.time})</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      ) : null}
-
       {/* PERSISTENT PATIENT IDENTITY & TOP ACTION BAR */}
       <div className="bg-white border border-[#e8e8e8] rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-2xs space-y-4">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -290,9 +220,12 @@ export const ViewDoctorWorkspace: React.FC = () => {
             <div className="bg-[#f0f2f5] p-1 rounded-full flex items-center border border-[#e8e8e8]">
               <button
                 type="button"
-                onClick={() => setCurrentMode('encounter')}
+                onClick={() => {
+                  setIsResultModalOpen(false);
+                  setCurrentMode('encounter');
+                }}
                 className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs font-semibold transition-all flex items-center space-x-1.5 ${
-                  currentMode === 'encounter'
+                  currentMode === 'encounter' && !isResultModalOpen
                     ? 'bg-white text-[#0e162b] shadow-xs'
                     : 'text-[#606060] hover:text-[#0e162b]'
                 }`}
@@ -303,9 +236,12 @@ export const ViewDoctorWorkspace: React.FC = () => {
 
               <button
                 type="button"
-                onClick={() => setCurrentMode('history')}
+                onClick={() => {
+                  setIsResultModalOpen(false);
+                  setCurrentMode('history');
+                }}
                 className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs font-semibold transition-all flex items-center space-x-1.5 ${
-                  currentMode === 'history'
+                  currentMode === 'history' && !isResultModalOpen
                     ? 'bg-white text-[#0e162b] shadow-xs'
                     : 'text-[#606060] hover:text-[#0e162b]'
                 }`}
@@ -315,7 +251,7 @@ export const ViewDoctorWorkspace: React.FC = () => {
               </button>
             </div>
 
-            {/* Modal Trigger for Doctor Encounter Results */}
+            {/* Full-Page Trigger for Doctor Encounter Results */}
             {activeEncounter.isLocked ? (
               <div className="flex items-center gap-2">
                 <span className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:py-2 bg-[#84ebb4]/25 text-[#1fc16b] text-xs font-semibold rounded-full border border-[#1fc16b]/20">
@@ -335,7 +271,11 @@ export const ViewDoctorWorkspace: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsResultModalOpen(true)}
-                className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-[#00c0fe] hover:bg-[#0095c5] text-white rounded-full text-xs font-semibold shadow-xs transition-all hover:scale-[1.02] active:scale-[0.98]"
+                className={`inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-xs font-semibold shadow-xs transition-all hover:scale-[1.02] active:scale-[0.98] ${
+                  isResultModalOpen
+                    ? 'bg-[#0e162b] text-white'
+                    : 'bg-[#00c0fe] hover:bg-[#0095c5] text-white'
+                }`}
               >
                 <Stethoscope className="w-4 h-4" />
                 <span>Enter Results</span>
@@ -366,8 +306,13 @@ export const ViewDoctorWorkspace: React.FC = () => {
         </div>
       </div>
 
-      {/* VIEW 1: ACTIVE CONSULTATION ENCOUNTER WORKSPACE */}
-      {currentMode === 'encounter' ? (
+      {/* VIEW 0: DEDICATED FULL-PAGE ENCOUNTER RESULTS DOCUMENTATION */}
+      {isResultModalOpen ? (
+        <DoctorEncounterResultModal
+          isOpen={isResultModalOpen}
+          onClose={() => setIsResultModalOpen(false)}
+        />
+      ) : currentMode === 'encounter' ? (
         <div className="space-y-6">
           {/* External Sealed Patient History Alert Banner */}
           <div className="bg-[#f0f9ff] border border-[#aaeaff] rounded-3xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs">
@@ -564,13 +509,20 @@ export const ViewDoctorWorkspace: React.FC = () => {
                 </p>
               ) : (
                 <div className="divide-y divide-[#e8e8e8] text-xs">
-                  {currentPatientPrescriptions.map((rx) => (
+                  {currentPatientPrescriptions.map((rx: any) => (
                     <div key={rx.id} className="py-2.5 first:pt-0 flex items-center justify-between">
                       <div>
-                        <strong className="text-[#0e162b] block font-semibold">{rx.medicationName}</strong>
-                        <span className="text-[#8e8e8e]">{rx.dosage} · {rx.frequency} · {rx.duration}</span>
+                        <strong className="text-[#0e162b] block font-semibold">
+                          {rx.medicationName ||
+                            (rx.items || []).map((i: any) => `${i.medication} ${i.strength}`).join(', ')}
+                        </strong>
+                        <span className="text-[#8e8e8e]">
+                          {rx.dosage
+                            ? `${rx.dosage} · ${rx.frequency} · ${rx.duration}`
+                            : (rx.items || []).map((i: any) => `${i.dosage} (${i.frequency})`).join(', ')}
+                        </span>
                       </div>
-                      <span className="px-2.5 py-0.5 rounded-full bg-[#84ebb4]/25 text-[#1fc16b] text-[10px] font-semibold border border-[#1fc16b]/20">
+                      <span className="px-2.5 py-0.5 rounded-full bg-[#84ebb4]/25 text-[#1fc16b] text-xs font-semibold border border-[#1fc16b]/20">
                         {rx.status}
                       </span>
                     </div>
@@ -585,7 +537,7 @@ export const ViewDoctorWorkspace: React.FC = () => {
                 <div className="flex items-center space-x-2">
                   <FlaskConical className="w-4 h-4 text-[#00c0fe]" />
                   <h3 className="text-sm font-bold text-[#0e162b]">
-                    Diagnostic Lab Orders ({currentPatientLabs.length})
+                    Diagnostic Lab Orders &amp; Results ({currentPatientLabs.length})
                   </h3>
                 </div>
                 <button
@@ -593,7 +545,7 @@ export const ViewDoctorWorkspace: React.FC = () => {
                   onClick={() => setIsOrderLabModalOpen(true)}
                   className="text-xs font-semibold text-[#00c0fe] hover:underline"
                 >
-                  + Order Lab
+                  + Order &amp; Enter Results
                 </button>
               </div>
 
@@ -603,15 +555,46 @@ export const ViewDoctorWorkspace: React.FC = () => {
                 </p>
               ) : (
                 <div className="divide-y divide-[#e8e8e8] text-xs">
-                  {currentPatientLabs.map((lab) => (
-                    <div key={lab.id} className="py-2.5 first:pt-0 flex items-center justify-between">
-                      <div>
-                        <strong className="text-[#0e162b] block font-semibold">{lab.testName}</strong>
-                        <span className="text-[#8e8e8e]">{lab.panelCategory} · Priority: {lab.priority}</span>
+                  {currentPatientLabs.map((lab: any) => (
+                    <div key={lab.id} className="py-3 first:pt-0 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <div>
+                          <strong className="text-[#0e162b] block font-semibold">
+                            {lab.testType || lab.testName}
+                          </strong>
+                          <span className="text-[#8e8e8e]">
+                            {lab.department || lab.panelCategory} · Priority: {lab.priority}
+                          </span>
+                        </div>
+                        <span
+                          className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${
+                            lab.status === 'Result Available' || lab.resultsSummary
+                              ? 'bg-[#84ebb4]/25 text-[#1fc16b] border-[#1fc16b]/20'
+                              : 'bg-[#f0f9ff] text-[#006a8e] border-[#aaeaff]'
+                          }`}
+                        >
+                          {lab.status}
+                        </span>
                       </div>
-                      <span className="px-2.5 py-0.5 rounded-full bg-[#f0f9ff] text-[#006a8e] text-[10px] font-semibold border border-[#aaeaff]">
-                        {lab.status}
-                      </span>
+                      {lab.structuredResults && lab.structuredResults.length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          {lab.structuredResults
+                            .filter((sr: any) => sr.value && sr.value.trim() !== '')
+                            .map((sr: any) => (
+                              <span
+                                key={sr.key}
+                                className="px-2 py-1 rounded-lg bg-[#f5f7fa] border border-[#e8e8e8] text-xs text-[#0e162b]"
+                              >
+                                <span className="text-[#606060]">{sr.label}:</span>{' '}
+                                <strong>{sr.value} {sr.unit}</strong>
+                              </span>
+                            ))}
+                        </div>
+                      ) : lab.resultsSummary ? (
+                        <p className="text-xs text-[#0e162b] bg-[#f5f7fa] px-2.5 py-1.5 rounded-lg border border-[#e8e8e8]">
+                          <strong>Results:</strong> {lab.resultsSummary}
+                        </p>
+                      ) : null}
                     </div>
                   ))}
                 </div>
@@ -1191,13 +1174,7 @@ export const ViewDoctorWorkspace: React.FC = () => {
         </div>
       )}
 
-      {/* 4. DOCTOR ENCOUNTER RESULTS MODAL (Modal Flow for Results Entry) */}
-      <DoctorEncounterResultModal
-        isOpen={isResultModalOpen}
-        onClose={() => setIsResultModalOpen(false)}
-      />
-
-      {/* 5. ADDENDUM MODAL (If encounter is locked) */}
+      {/* 4. ADDENDUM MODAL (If encounter is locked) */}
       {isAddAmendmentOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150">
           <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-[#e8e8e8] space-y-4">

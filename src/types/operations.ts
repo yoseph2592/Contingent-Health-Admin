@@ -1,6 +1,7 @@
 export type OperationalTab =
   | 'overview'
   | 'patients'
+  | 'maternal'
   | 'appointments'
   | 'encounter'
   | 'doctors'
@@ -223,6 +224,14 @@ export type LabRequestStatus =
   | 'Reviewed'
   | 'Closed';
 
+export interface LabResultParameter {
+  key: string;
+  label: string;
+  value: string;
+  unit: string;
+  referenceRange: string;
+}
+
 export interface LabRequestRecord {
   id: string; // e.g. LAB-9031
   encounterId?: string;
@@ -245,6 +254,7 @@ export interface LabRequestRecord {
   doctorInterpretation?: string;
   isFlaggedAbnormal?: boolean;
   reviewedByDoctor?: boolean;
+  structuredResults?: LabResultParameter[];
 }
 
 export type ReferralStatus =
@@ -533,3 +543,146 @@ export interface ExternalHistoricalEncounter {
     attendingSignature: string;
   };
 }
+
+export type AncRiskClassification = 'Routine ANC (Basic Component)' | 'Specialized / High-Risk Care' | 'Pending Physician Classification';
+
+export interface AncRiskItem {
+  id: string;
+  label: string;
+  present: boolean;
+  notes?: string;
+}
+
+export interface AncRiskAssessment {
+  obstetricHistory: AncRiskItem[];
+  currentPregnancy: AncRiskItem[];
+  generalMedical: AncRiskItem[];
+  physicalExamAndCounselling: AncRiskItem[];
+  classification: AncRiskClassification;
+  classificationRationale: string;
+  evaluatedBy: string;
+  evaluatedAt: string;
+}
+
+export interface AncContactVisit {
+  id: string;
+  contactNumber: number; // 1..8 or custom >8
+  targetWeeksLabel: string; // e.g. "Contact 1 (Up to 12 wks)", "Contact 2 (20 wks)", etc.
+  status: 'Completed' | 'Scheduled' | 'Overdue' | 'Upcoming';
+  date?: string;
+  gestationalAgeWeeks?: number;
+  gestationalAgeDays?: number;
+  attendingPractitioner?: string;
+
+  // Contents-of-Care Reference Categories
+  presentPregnancyComplaints: string;
+  pastPregnancyHistoryNotes: string;
+  medicalAndSurgicalHistoryNotes: string;
+  mentalHealthAndSocialHistory: string;
+
+  // Physical Examinations
+  physicalExam: {
+    weightKg: string;
+    bloodPressure: string;
+    pallor: string;
+    jaundice: string;
+    edema: string;
+    breastAndChestExam: string;
+    symphysisFundalHeightCm: string;
+    fetalPresentation: string;
+    fetalHeartRateBpm: string;
+    fetalMovement: string;
+  };
+
+  // Investigations (Ultrasound & Lab tests)
+  investigations: {
+    hemoglobin: string;
+    bloodGroupAndRh: string;
+    urinalysisProteinGlucose: string;
+    syphilisHivHepBScreening: string;
+    bloodGlucoseOgtt: string;
+    ultrasoundFindings: string;
+    otherLabs: string;
+  };
+
+  // Medications, Prophylaxis & Vaccines
+  medicationsAndVaccines: {
+    ironAndFolicAcid: string;
+    calciumSupplementation: string;
+    tetanusDiphtheriaVaccine: string;
+    dewormingOrIptp: string;
+    otherPrescriptions: string;
+  };
+
+  // Advice, Counselling, Danger Signs & Assessment
+  adviceAndCounselling: string;
+  clinicalAssessmentAndDangerSigns: string;
+  actionsTaken: string;
+  nextAppointmentDate: string;
+}
+
+export interface MaternalMedicationTrackingItem {
+  id: string;
+  name: string;
+  category: 'Supplement / Prophylaxis' | 'Vaccination / Immunization' | 'Prescribed Treatment';
+  dosageAndSchedule: string;
+  prescribedBy: string;
+  startDate: string;
+  prescribedStatus: 'Active' | 'Completed' | 'Dose Adjusted' | 'Held';
+  patientReportedAdherence: 'Adherent (Daily)' | 'Partial / Occasional Missed Dose' | 'Not Started' | 'Administered in Clinic';
+  adherenceNotes: string;
+}
+
+export interface MaternalFollowUpSchedule {
+  id: string;
+  scheduledDate: string;
+  scheduledTime: string;
+  targetGestationalWeeks: number;
+  intervalType: 'Monthly (4-Weekly)' | 'Bi-Weekly (2-Weekly)' | 'Weekly' | 'Twice Weekly' | 'Custom Date';
+  contactPurpose: string;
+  assignedDoctorName: string;
+  status: 'Scheduled' | 'Completed' | 'Overdue' | 'Rescheduled';
+  clinicalReminderNotes: string;
+}
+
+export interface MaternalRecord {
+  id: string; // e.g. MAT-2026-001
+  patientId: string;
+  patientName: string;
+  patientAge: number;
+  bloodType: string;
+  phone: string;
+  affiliatedDoctorId: string;
+  affiliatedDoctorName: string;
+
+  // Step A: ANC Registration & Pregnancy Information
+  ancRegistrationNumber: string;
+  registrationDate: string;
+  lmpDate: string;
+  eddDate: string;
+  currentGestationalWeeks: number;
+  currentGestationalDays: number;
+  trimester: '1st Trimester' | '2nd Trimester' | '3rd Trimester';
+  gravida: number;
+  para: number;
+  childrenAlive: number;
+  maritalStatus: 'Married' | 'Single' | 'Domestic Partnership' | 'Widowed' | 'Divorced';
+
+  // Step B: Risk Classification & Assessment
+  riskAssessment: AncRiskAssessment;
+
+  // Step C: Longitudinal Contents-of-Care Chart (8 Reference Contacts + Custom)
+  contacts: AncContactVisit[];
+
+  // Step D: Medications, Supplements, Vaccinations & Adherence
+  medicationTracking: MaternalMedicationTrackingItem[];
+
+  // Step E: Follow-Up Schedule
+  followUpSchedules: MaternalFollowUpSchedule[];
+
+  // Care Plan Summary
+  carePlanSummary: string;
+  deliveryPlanFacility: string;
+  emergencyReadinessNotes: string;
+}
+
